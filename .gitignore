@@ -1,4 +1,9 @@
 data/*
+test/
+train/
+*.png
+*.swp
+output/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -2,10 +2,10 @@ import imghdr
 import numpy as np
 import cv2
 import os
-from keras.optimizers import Adam
-from keras.callbacks import TensorBoard
-from keras.layers import merge, Input
+from keras.optimizers import Adadelta
+from keras.layers import merge, Input, Lambda
 from keras.models import Model
+from keras.engine.topology import Container
 import keras.backend as K
 import matplotlib.pyplot as plt
 from model import model_generator, model_discriminator
@@ -59,16 +59,19 @@ class DataGenerator(object):
                 yield inputs, points, masks
 
 def example_gan(result_dir="output", data_dir="data"):
-    input_shape = (256, 256, 3)
-    local_shape = (128, 128, 3)
-    batch_size = 4
-    n_epoch = 100
+    input_shape = (128, 128, 3)
+    local_shape = (64, 64, 3)
+    batch_size = 8
+    n_epoch = 400
+    tc = int(n_epoch * 0.18)
+    td = int(n_epoch * 0.02)
+    alpha = 0.0004
 
     train_datagen = DataGenerator(input_shape[:2], local_shape[:2])
 
     generator = model_generator(input_shape)
     discriminator = model_discriminator(input_shape, local_shape)
-    optimizer = Adam(0.0002, 0.5)
+    optimizer = Adadelta()
 
     # build model
     org_img = Input(shape=input_shape)
@@ -81,14 +84,28 @@ def example_gan(result_dir="output", data_dir="data"):
     completion = merge([imitation, org_img, mask],
                        mode=lambda x: x[0] * x[2] + x[1] * (1 - x[2]),
                        output_shape=input_shape)
-    cmp_model = Model([org_img, mask], completion)
-    cmp_model.compile(loss='mse', 
+    cmp_container = Container([org_img, mask], completion)
+    cmp_out = cmp_container([org_img, mask])
+    cmp_model = Model([org_img, mask], cmp_out)
+    cmp_model.compile(loss='mse',
                       optimizer=optimizer)
 
-    discriminator.compile(loss='binary_crossentropy', 
-                          optimizer=optimizer)
+    local_img = Input(shape=local_shape)
+    d_container = Container([org_img, local_img], discriminator([org_img, local_img]))
+    d_model = Model([org_img, local_img], d_container([org_img, local_img]))
+    d_model.compile(loss='binary_crossentropy', 
+                    optimizer=optimizer)
+
+    def random_cropping(x, x1, y1, x2, y2):
+        out = []
+        for idx in range(batch_size):
+            out.append(x[idx, y1[idx]:y2[idx], x1[idx]:x2[idx], :])
+        return K.stack(out, axis=0)
+    cropping = Lambda(random_cropping, output_shape=local_shape)
+
     for n in range(n_epoch):
-        for inputs, points, masks in train_datagen.flow_from_directory(data_dir, batch_size):
+        for inputs, points, masks in train_datagen.flow_from_directory(data_dir, batch_size,
+                                                                       hole_min=48, hole_max=64):
             cmp_image = cmp_model.predict([inputs, masks])
             local = []
             local_cmp = []
@@ -100,13 +117,28 @@ def example_gan(result_dir="output", data_dir="data"):
             valid = np.ones((batch_size, 1))
             fake = np.zeros((batch_size, 1))
 
-            # Train the discriminator
-            d_loss_real = discriminator.train_on_batch([inputs, np.array(local)], valid)
-            d_loss_fake = discriminator.train_on_batch([cmp_image, np.array(local_cmp)], fake)
-            d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+            g_loss = 0.0
+            d_loss = 0.0
+            if n < tc:
+                g_loss = cmp_model.train_on_batch([inputs, masks], inputs)
+                print("epoch: %d < %d [D loss: %e] [G mse: %e]" % (n,tc, d_loss, g_loss))
+            else:
+                d_loss_real = d_model.train_on_batch([inputs, np.array(local)], valid)
+                d_loss_fake = d_model.train_on_batch([cmp_image, np.array(local_cmp)], fake)
+                d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+                if n >= tc + td:
+                    d_container.trainable = False
+                    cropping.arguments = {'x1': points[:, 0], 'y1': points[:, 1],
+                                          'x2': points[:, 2], 'y2': points[:, 3]}
+                    all_model = Model([org_img, mask],
+                                      [cmp_out, d_container([cmp_out, cropping(cmp_out)])])
+                    all_model.compile(loss=['mse', 'binary_crossentropy'],
+                                      loss_weights=[1.0, alpha], optimizer=optimizer)
+                    g_loss = all_model.train_on_batch([inputs, masks],
+                                                      [inputs, valid])
+                print("epoch: %d [D loss: %e] [G all: %e]" % (n, d_loss, g_loss))
 
-            g_loss = cmp_model.train_on_batch([inputs, masks], inputs)
-        print("%d [D loss: %f] [G mse: %f]" % (n, d_loss, g_loss))
+
         num_img = min(5, batch_size)
         fig, axs = plt.subplots(num_img, 3)
         for i in range(num_img):
@@ -121,9 +153,9 @@ def example_gan(result_dir="output", data_dir="data"):
             axs[i, 2].set_title('Ground Truth')
         fig.savefig(os.path.join(result_dir, "result_%d.png" % n))
         plt.close()
-    # save model
-    generator.save(os.path.join(result_dir, "generator.h5"))
-    discriminator.save(os.path.join(result_dir, "discriminator.h5"))
+        # save model
+        generator.save(os.path.join(result_dir, "generator_%d.h5" % n))
+        discriminator.save(os.path.join(result_dir, "discriminator_%d.h5" % n))
 
 
 def main():
