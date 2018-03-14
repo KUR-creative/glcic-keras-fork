@@ -63,6 +63,7 @@ def example_gan(result_dir="output", data_dir="data"):
     local_shape = (64, 64, 3)
     batch_size = 8
     n_epoch = 10
+
     tc = int(n_epoch * 0.18)
     td = int(n_epoch * 0.02)
     alpha = 0.0004
@@ -156,7 +157,7 @@ def example_gan(result_dir="output", data_dir="data"):
         # save model
         generator.save(os.path.join(result_dir, "generator_%d.h5" % n))
         discriminator.save(os.path.join(result_dir, "discriminator_%d.h5" % n))
-        
+
 def main():
     example_gan()
 
