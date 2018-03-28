@@ -55,11 +55,11 @@ def model_discriminator(global_shape=(128, 128, 3),
     x_g = Conv2D(256, (5,5), strides=(2,2), padding='same')(x_g)
     x_g = BatchNormalization()(x_g)
     x_g = Activation('relu')(x_g)
+    '''
     # 4x4 / 22x22 / 16
     x_g = Conv2D(512, (5,5), strides=(2,2), padding='same')(x_g)
     x_g = BatchNormalization()(x_g)
     x_g = Activation('relu')(x_g)
-    '''
     # 4x4 / 11x11 / 8
     x_g = Conv2D(512, (5,5), strides=(2,2), padding='same')(x_g)
     x_g = BatchNormalization()(x_g)
@@ -79,11 +79,11 @@ def model_discriminator(global_shape=(128, 128, 3),
     x_l = Conv2D(128, (5,5), strides=(2,2), padding='same')(x_l)
     x_l = BatchNormalization()(x_l)
     x_l = Activation('relu')(x_l)
+    '''
     # 4x4 / 22x22 / 16
     x_l = Conv2D(256, (5,5), strides=(2,2), padding='same')(x_l)
     x_l = BatchNormalization()(x_l)
     x_l = Activation('relu')(x_l)
-    '''
     # 4x4 / 11x11 / 8
     x_l = Conv2D(512, (5,5), strides=(2,2), padding='same')(x_l)
     x_l = BatchNormalization()(x_l)
@@ -92,7 +92,8 @@ def model_discriminator(global_shape=(128, 128, 3),
     '''
     # FC: 1024
     x_l = Flatten()(x_l)
-    x_l = Dense(1024)(x_l) # then ReLU? or not?
+    #x_l = Dense(1024)(x_l) # then ReLU? or not?
+    x_l = Dense(512)(x_l) # then ReLU? or not?
 
     x = concatenate([x_g, x_l]) # no activation. or..?
     x = Dense(1, activation='sigmoid')(x)

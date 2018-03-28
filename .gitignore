@@ -5,6 +5,12 @@ train/
 *.swp
 output/*
 
+*.h5
+*.taghl
+*.gz
+tags
+*.vim
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
