@@ -39,7 +39,7 @@ def completion_net(input_shape=(256, 256, 3),name='complnet'):
 
 
 def discrimination_net(global_shape=(128, 128, 3),
-                       local_shape=(64, 64, 3)):
+                       local_shape=(64, 64, 3),name='discrimnet'):
     g_img = Input(shape=global_shape)
     # 32x32 / 178x178 / 128
     x_g = Conv2D(64, (5,5), strides=(2,2), padding='same')(g_img)
@@ -95,7 +95,7 @@ def discrimination_net(global_shape=(128, 128, 3),
 
     x = concatenate([x_g, x_l]) # no activation. or..?
     x = Dense(1, activation='sigmoid')(x)
-    return Model(inputs=[g_img, l_img], outputs=x)
+    return Model(inputs=[g_img, l_img], outputs=x, name=name)
 
 import numpy as np
 import keras.backend as K

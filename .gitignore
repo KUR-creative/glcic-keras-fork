@@ -4,6 +4,7 @@ train/
 *.png
 *.swp
 output/*
+celeba/
 
 *.h5
 *.taghl
