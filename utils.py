@@ -60,3 +60,4 @@ def get_ld_crop_yx(originHW, localHW, maskYX, maskHW):
 
     y,x = center_mY - half_lH, center_mX - half_lW
     return y,x
+

@@ -3,7 +3,7 @@ from keras.layers import Input, Add, Multiply, merge
 from keras.models import Model
 from keras.engine.topology import Container
 from keras.optimizers import Adadelta, Adam
-from data_utils import gen_batch
+from data_utils import gen_batch,ElapsedTimer
 from keras.utils import plot_model
 
 import tensorflow as tf
@@ -12,19 +12,6 @@ import numpy as np
 import os, h5py
 np.set_printoptions(threshold=np.nan, linewidth=np.nan)
 
-import time
-class ElapsedTimer(object):
-    def __init__(self):
-        self.start_time = time.time()
-    def elapsed(self,sec):
-        if sec < 60:
-            return str(sec) + " sec"
-        elif sec < (60 * 60):
-            return str(sec / 60) + " min"
-        else:
-            return str(sec / (60 * 60)) + " hr"
-    def elapsed_time(self):
-        print("Elapsed: %s " % self.elapsed(time.time() - self.start_time) )
 
 BATCH_SIZE = 16
 IMG_SIZE = 128
@@ -86,26 +73,31 @@ joint_model.compile(loss=['mse', 'binary_crossentropy'],
                     loss_weights=[1.0, alpha], optimizer=Adadelta())
 joint_model.summary()
 plot_model(joint_model, to_file='joint_model.png', show_shapes=True)
-#------------------------------------------------------------------
-timer = ElapsedTimer()
-with h5py.File('data.h5','r+') as data_file:
+timer = ElapsedTimer('Total Training')
+#--------------------------------------------------------------------------------------
+with h5py.File('./data128_half.h5','r+') as data_file:
     data_arr = data_file['images']
     mean_pixel_value = data_file['mean_pixel_value'][()] / 255
 
-    #num_epoch = 50
+    #num_epoch = 200
     #tc = int(num_epoch * 0.18)
     #td = int(num_epoch * 0.02)
-    num_epoch = 10
+    num_epoch = 13
     tc = 2
     td = 1
+    print('tc=',tc,' td=',td)
 
     valids = np.ones((BATCH_SIZE, 1))
     fakes = np.zeros((BATCH_SIZE, 1))
     for epoch in range(num_epoch):
+        epoch_timer = ElapsedTimer('1 epoch training time')
+        #--------------------------------------------------------------------------------------
         for batch in gen_batch(data_arr, BATCH_SIZE, IMG_SIZE, LD_CROP_SIZE,
                                MIN_LEN, MAX_LEN, mean_pixel_value):
             origins, complnet_inputs, masked_origins, maskeds, ld_crop_yxhws = batch
 
+            #batch_timer = ElapsedTimer('1 batch training time')
+            #--------------------------------------------------------------------------------------
             if epoch < tc:
                 mse_loss = compl_model.train_on_batch([masked_origins, complnet_inputs, maskeds],
                                                       origins)
@@ -118,6 +110,10 @@ with h5py.File('data.h5','r+') as data_file:
                     joint_loss,mse,gan = joint_model.train_on_batch([masked_origins,complnet_inputs,maskeds,
                                                                      ld_crop_yxhws],
                                                                     [origins, valids])
+            #--------------------------------------------------------------------------------------
+            #batch_timer.elapsed_time()
+        #--------------------------------------------------------------------------------------
+        epoch_timer.elapsed_time()
 
         if epoch < tc:
             print('epoch %d: [C mse loss: %e]' % (epoch, mse_loss))
@@ -126,14 +122,16 @@ with h5py.File('data.h5','r+') as data_file:
             if epoch >= tc + td:
                 print('epoch %d: [joint loss: %e | mse loss: %e, gan loss: %e]' % (epoch, joint_loss, mse,gan))
 
-        result_dir = 'output'
-        completed = compl_model.predict([masked_origins, complnet_inputs, maskeds])
-        np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
-                np.array([complnet_inputs,completed,origins]))
-                # save predicted image of last batch in epoch.
-        compl_model.save(os.path.join(result_dir, "complnet_%d.h5" % epoch))
+                if epoch % 4 == 0:
+                    result_dir = 'output'
+                    completed = compl_model.predict([masked_origins, complnet_inputs, maskeds])
+                    np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
+                            np.array([complnet_inputs,completed,origins]))
+                            # save predicted image of last batch in epoch.
+                    compl_model.save(os.path.join(result_dir, "complnet_%d.h5" % epoch))
+                    discrim_model.save(os.path.join(result_dir, "discrimnet_%d.h5" % epoch))
+#--------------------------------------------------------------------------------------
 timer.elapsed_time()
-#------------------------------------------------------------------
 '''
 if __name__ == "__main__":
     timer = ElapsedTimer()

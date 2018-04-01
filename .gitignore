@@ -1,3 +1,6 @@
+mailing.py
+log*
+
 data/*
 test/
 train/
