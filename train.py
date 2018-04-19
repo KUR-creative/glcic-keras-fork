@@ -20,9 +20,12 @@ LD_CROP_SIZE = IMG_SIZE // 2  # LD means Local Discrimnator
 #MIN_LEN = IMG_SIZE // 4
 MAX_LEN = IMG_SIZE // 3
 MIN_LEN = IMG_SIZE // 5
+
 IMG_SHAPE = (IMG_SIZE,IMG_SIZE,3)
 LD_CROP_SHAPE = (LD_CROP_SIZE,LD_CROP_SIZE,3)
 MASK_SHAPE = (IMG_SIZE,IMG_SIZE,1)
+VAR_IMG_SHAPE = (None,None,3)
+VAR_MASK_SHAPE = (None,None,1)
 
 def cropping(imgs_yxhws):
     def crop(img_yxhw):
@@ -36,14 +39,31 @@ def cropping(imgs_yxhws):
 complnet_inp = Input(shape=IMG_SHAPE, name='complnet_inp')
 masked_origins_inp = Input(shape=IMG_SHAPE, name='masked_origins_inp')
 maskeds_inp = Input(shape=MASK_SHAPE, name='maskeds_inp')
+#complnet_inp = Input(shape=VAR_IMG_SHAPE, name='complnet_inp')
+#masked_origins_inp = Input(shape=VAR_IMG_SHAPE, name='masked_origins_inp')
+#maskeds_inp = Input(shape=VAR_MASK_SHAPE, name='maskeds_inp')
 
-complnet_out = completion_net(IMG_SHAPE)(complnet_inp)
+complnet_out = completion_net(VAR_IMG_SHAPE)(complnet_inp)
 merged_out = Add()([masked_origins_inp, 
                      Multiply()([complnet_out, 
                                  maskeds_inp])])
 compl_model = Model([masked_origins_inp, 
                      complnet_inp, 
                      maskeds_inp], merged_out)
+'''
+# complnet must be defined separaely. it is used for both train/test time.
+complnet = completion_net(VAR_IMG_SHAPE)
+
+var_complnet_out = complnet(var_complnet_inp)
+merged_out = Add()([var_masked_origins_inp, 
+                     Multiply()([complnet_out, 
+                                 var_maskeds_inp])])
+test_compl_model = Model([var_origins_inp,
+                          var_complnet_inp,
+                          var_maskeds_inp],var_merged_out)
+# and test model would be saved!
+# retrain model with ./data128.h5 <- small dataset.
+'''
 compl_model.compile(loss='mse', optimizer=Adadelta())
 
 #def discrimination_model():
@@ -69,7 +89,7 @@ joint_model = Model([masked_origins_inp,complnet_inp,maskeds_inp,
                      crop_yxhw_inp],
                     [merged_out,
                      d_container([merged_out,crop_yxhw_inp])])
-                    #merged_out,discrim_out)
+
 alpha = 0.0004
 joint_model.compile(loss=['mse', 'binary_crossentropy'],
                     loss_weights=[1.0, alpha], optimizer=Adadelta())
@@ -81,12 +101,13 @@ with h5py.File('./data128_half.h5','r') as data_file:
     data_arr = data_file['images']
     mean_pixel_value = data_file['mean_pixel_value'][()] / 255
 
-    num_epoch = 200
-    tc = int(num_epoch * 0.18)
-    td = int(num_epoch * 0.02)
-    #num_epoch = 13
-    #tc = 2
-    #td = 1
+    save_interval = 2
+    #num_epoch = 200
+    #tc = int(num_epoch * 0.18)
+    #td = int(num_epoch * 0.02)
+    num_epoch = 13
+    tc = 2
+    td = 1
     print('num_epoch=',num_epoch,'tc=',tc,'td=',td)
 
     valids = np.ones((BATCH_SIZE, 1))
@@ -124,7 +145,7 @@ with h5py.File('./data128_half.h5','r') as data_file:
             if epoch >= tc + td:
                 print('epoch %d: [joint loss: %e | mse loss: %e, gan loss: %e]' % (epoch, joint_loss, mse,gan))
 
-                if epoch % 20 == 0 or epoch == num_epoch - 1:
+                if epoch % save_interval == 0 or epoch == num_epoch - 1:
                     result_dir = 'output'
                     completed = compl_model.predict([masked_origins, complnet_inputs, maskeds])
                     np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
