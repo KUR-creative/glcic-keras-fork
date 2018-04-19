@@ -20,6 +20,7 @@ class ElapsedTimer(object):
     def elapsed_time(self):
         print(self.string + ": %s " % self.elapsed(time.time() - self.start_time),
               flush=True)
+        return (self.string + ": %s " % self.elapsed(time.time() - self.start_time))
 
 def get_random_maskeds(batch_size, img_size, 
                        min_mask_len, max_mask_len):
@@ -164,6 +165,7 @@ class Test_chunk_generator(unittest.TestCase):
         print(dst_arr)
                 
 if __name__ == "__main__":
+    '''
     #unittest.main()
     batch_size = 16
     img_size = 128
@@ -187,12 +189,18 @@ if __name__ == "__main__":
             #cv2.imshow('complnet_inp2',complnet_inputs[batch_size-1]); cv2.waitKey(0) 
             cv2.imshow('ld_crop',complnet_inputs[0][lY:lY+lH,lX:lX+lW]); cv2.waitKey(0)
             #cv2.imshow('ld_crop2',complnet_inputs[batch_size-1][lY:lY+lH,lX:lX+lW]); cv2.waitKey(0)
-            '''
-            '''
-    #print(result.shape) 
+
+    write_result_img('./output/I_O_GT__180.npy',
+                     './output/result.png',bat_size,img_size)
+    write_result_img('./output/I_O_GT__160.npy',
+                     './output/result12.png',bat_size,img_size)
+    write_result_img('./output/I_O_GT__199.npy',
+                     './output/result199.png',bat_size,img_size)
     '''
     bat_size = 16
     img_size = 128
-    write_result_img('./output/I_O_GT__897.npy',
-                     './output/result897.png',bat_size,img_size)
-    '''
+    for i in range(40,180+20,20):
+        write_result_img('./output/I_O_GT__%d.npy' % i,
+                         './output/result%d.png' % i,
+                         bat_size,img_size)
+        print(i)

@@ -16,8 +16,10 @@ np.set_printoptions(threshold=np.nan, linewidth=np.nan)
 BATCH_SIZE = 16
 IMG_SIZE = 128
 LD_CROP_SIZE = IMG_SIZE // 2  # LD means Local Discrimnator
-MAX_LEN = IMG_SIZE // 2
-MIN_LEN = IMG_SIZE // 4
+#MAX_LEN = IMG_SIZE // 2
+#MIN_LEN = IMG_SIZE // 4
+MAX_LEN = IMG_SIZE // 3
+MIN_LEN = IMG_SIZE // 5
 IMG_SHAPE = (IMG_SIZE,IMG_SIZE,3)
 LD_CROP_SHAPE = (LD_CROP_SIZE,LD_CROP_SIZE,3)
 MASK_SHAPE = (IMG_SIZE,IMG_SIZE,1)
@@ -75,17 +77,17 @@ joint_model.summary()
 plot_model(joint_model, to_file='joint_model.png', show_shapes=True)
 timer = ElapsedTimer('Total Training')
 #--------------------------------------------------------------------------------------
-with h5py.File('./data128_half.h5','r+') as data_file:
+with h5py.File('./data128_half.h5','r') as data_file:
     data_arr = data_file['images']
     mean_pixel_value = data_file['mean_pixel_value'][()] / 255
 
-    #num_epoch = 200
-    #tc = int(num_epoch * 0.18)
-    #td = int(num_epoch * 0.02)
-    num_epoch = 13
-    tc = 2
-    td = 1
-    print('tc=',tc,' td=',td)
+    num_epoch = 200
+    tc = int(num_epoch * 0.18)
+    td = int(num_epoch * 0.02)
+    #num_epoch = 13
+    #tc = 2
+    #td = 1
+    print('num_epoch=',num_epoch,'tc=',tc,'td=',td)
 
     valids = np.ones((BATCH_SIZE, 1))
     fakes = np.zeros((BATCH_SIZE, 1))
@@ -122,7 +124,7 @@ with h5py.File('./data128_half.h5','r+') as data_file:
             if epoch >= tc + td:
                 print('epoch %d: [joint loss: %e | mse loss: %e, gan loss: %e]' % (epoch, joint_loss, mse,gan))
 
-                if epoch % 4 == 0:
+                if epoch % 20 == 0 or epoch == num_epoch - 1:
                     result_dir = 'output'
                     completed = compl_model.predict([masked_origins, complnet_inputs, maskeds])
                     np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
@@ -131,7 +133,9 @@ with h5py.File('./data128_half.h5','r+') as data_file:
                     compl_model.save(os.path.join(result_dir, "complnet_%d.h5" % epoch))
                     discrim_model.save(os.path.join(result_dir, "discrimnet_%d.h5" % epoch))
 #--------------------------------------------------------------------------------------
-timer.elapsed_time()
+time_str = timer.elapsed_time()
+import mailing
+mailing.send_mail_to_kur(time_str)
 '''
 if __name__ == "__main__":
     timer = ElapsedTimer()

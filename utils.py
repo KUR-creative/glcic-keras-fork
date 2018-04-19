@@ -1,7 +1,7 @@
 import numpy as np
 def random_masked(mat, min_len,max_len, mask_val=1,bg_val=0): 
     '''           ^^^
-    WARNING: It modify mat!
+    WARNING: It modifies mat!
     
     If you don't want side-effects, pass tuple(shape of matrix) 
     as mat, then this function create new matrix and return it.

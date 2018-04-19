@@ -74,7 +74,7 @@ if __name__ == "__main__":
     num_img_elems = (img_size**2)*3
 
     data_dir = './data128_half/'
-    chk_size = 30000
+    chk_size = 10000
     #chk_size = 130000
     #data_dir = './data/'
     #chk_size = 100
