@@ -151,8 +151,10 @@ with h5py.File('./data128_half.h5','r') as data_file:
                     np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
                             np.array([complnet_inputs,completed,origins]))
                             # save predicted image of last batch in epoch.
-                    compl_model.save(os.path.join(result_dir, "complnet_%d.h5" % epoch))
-                    discrim_model.save(os.path.join(result_dir, "discrimnet_%d.h5" % epoch))
+                    compl_model.save_weights(os.path.join(result_dir, 
+                                                          "complnet_%d.h5" % epoch))
+                    discrim_model.save_weights(os.path.join(result_dir, 
+                                                            "discrimnet_%d.h5" % epoch))
 #--------------------------------------------------------------------------------------
 time_str = timer.elapsed_time()
 import mailing
