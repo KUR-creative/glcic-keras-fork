@@ -40,16 +40,22 @@ h,w = hw
 complnet_output = compl_model.predict(
                     [complnet_input.reshape((1,h,w,3))]
                   )
-
+complnet_output = complnet_output.reshape(
+                    complnet_output.shape[1:]
+                  )
+complnet_output = complnet_output[:,:2835]
 print(origin.shape)
 print(complnet_output.shape)
-#cv2.imshow('input',origin); cv2.waitKey(0)
+
+mask = np.logical_not(not_mask).astype(np.float32)
+completed = complnet_output * mask + holed_origin
+
+
 cv2.imshow('origin',origin); cv2.waitKey(0)
 cv2.imshow('mean_mask',mean_mask); cv2.waitKey(0)
 cv2.imshow('not_mask',not_mask); cv2.waitKey(0)
+cv2.imshow('mask',mask); cv2.waitKey(0)
 cv2.imshow('holed_origin',holed_origin); cv2.waitKey(0)
 cv2.imshow('complnet_input',complnet_input); cv2.waitKey(0)
-cv2.imshow('complnet_output',
-           complnet_output.reshape((complnet_output.shape[1],
-                                    complnet_output.shape[2],
-                                    3))); cv2.waitKey(0)
+cv2.imshow('complnet_output',complnet_output); cv2.waitKey(0)
+cv2.imshow('completed',completed); cv2.waitKey(0)
