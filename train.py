@@ -38,18 +38,18 @@ def cropping(imgs_yxhws):
 #def completion_model():
 complnet_inp = Input(shape=IMG_SHAPE, name='complnet_inp')
 masked_origins_inp = Input(shape=IMG_SHAPE, name='masked_origins_inp')
-maskeds_inp = Input(shape=MASK_SHAPE, name='maskeds_inp')
+masks_inp = Input(shape=MASK_SHAPE, name='masks_inp')
 #complnet_inp = Input(shape=VAR_IMG_SHAPE, name='complnet_inp')
 #masked_origins_inp = Input(shape=VAR_IMG_SHAPE, name='masked_origins_inp')
-#maskeds_inp = Input(shape=VAR_MASK_SHAPE, name='maskeds_inp')
+#masks_inp = Input(shape=VAR_MASK_SHAPE, name='masks_inp')
 
 complnet_out = completion_net(VAR_IMG_SHAPE)(complnet_inp)
 merged_out = Add()([masked_origins_inp, 
                      Multiply()([complnet_out, 
-                                 maskeds_inp])])
+                                 masks_inp])])
 compl_model = Model([masked_origins_inp, 
                      complnet_inp, 
-                     maskeds_inp], merged_out)
+                     masks_inp], merged_out)
 '''
 # complnet must be defined separaely. it is used for both train/test time.
 complnet = completion_net(VAR_IMG_SHAPE)
@@ -85,7 +85,7 @@ plot_model(discrim_model, to_file='D_model.png', show_shapes=True)
 d_container = Container([origins_inp,crop_yxhw_inp], discrim_out,
                         name='D_container')
 d_container.trainable = False
-joint_model = Model([masked_origins_inp,complnet_inp,maskeds_inp,
+joint_model = Model([masked_origins_inp,complnet_inp,masks_inp,
                      crop_yxhw_inp],
                     [merged_out,
                      d_container([merged_out,crop_yxhw_inp])])
@@ -147,7 +147,9 @@ with h5py.File('./data128_half.h5','r') as data_file:
 
                 if epoch % save_interval == 0 or epoch == num_epoch - 1:
                     result_dir = 'output'
-                    completed = compl_model.predict([masked_origins, complnet_inputs, maskeds])
+                    completed = compl_model.predict([masked_origins, 
+                                                     complnet_inputs, 
+                                                     maskeds])
                     np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
                             np.array([complnet_inputs,completed,origins]))
                             # save predicted image of last batch in epoch.
