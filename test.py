@@ -30,7 +30,20 @@ def mask_from_user(mask_hw,mean_pixel_val):
     #mask[60:100,30:130] = 1.0 # other
     return mean_mask, np.logical_not(mean_mask).astype(np.float32)
 
-origin, hw = load_image('./data/test_images/1099100.png')
+def padding_removed(padded_img,no_pad_shape):
+    pH,pW,_ = padded_img.shape
+    nH,nW,_ = no_pad_shape
+    dH = pH - nH
+    dW = pW - nW
+    #print('ps',padded_img.shape)
+    #print('ns',no_pad_shape)
+    #print('dH,dW',dH,dW)
+    #print('ret',padded_img[0:pH-dH,0:pW-dW].shape)
+    # TODO: change this! it's temporary implementation!
+    # TODO: 0~pH-dH is incorrect!
+    return padded_img[0:pH-dH,0:pW-dW]
+
+origin, hw = load_image('./data/test_images/200000_23hr_5.png')
 mean_mask, not_mask = mask_from_user(hw, np.mean(origin))
 holed_origin = origin * not_mask
 complnet_input = np.copy(holed_origin) + mean_mask
@@ -43,9 +56,7 @@ complnet_output = compl_model.predict(
 complnet_output = complnet_output.reshape(
                     complnet_output.shape[1:]
                   )
-complnet_output = complnet_output[:,:2835]
-print(origin.shape)
-print(complnet_output.shape)
+complnet_output = padding_removed(complnet_output, origin.shape)
 
 mask = np.logical_not(not_mask).astype(np.float32)
 completed = complnet_output * mask + holed_origin

@@ -1,6 +1,6 @@
-t:
-	python tmp.py
 tt:
+	python tmp.py
+t:
 	python test.py
 rt:
 	python train.py
