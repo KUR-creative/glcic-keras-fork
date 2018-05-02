@@ -1,4 +1,10 @@
  [연구(가장 먼저)]
+0.
+implement interactive tester
+REFACTOR: temporary implementation !!!
+    1- padding removal function
+    2- magenta mask creation
+
 1.
 complnet만 따로 저장하거나, (save_weights/load_weights로 가능한 듯.)
 입력단만 바꿔 저장하거나...
