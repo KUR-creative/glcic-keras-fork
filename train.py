@@ -57,10 +57,10 @@ complnet = completion_net(VAR_IMG_SHAPE)
 var_complnet_out = complnet(var_complnet_inp)
 merged_out = Add()([var_masked_origins_inp, 
                      Multiply()([complnet_out, 
-                                 var_maskeds_inp])])
+                                 var_masks_inp])])
 test_compl_model = Model([var_origins_inp,
                           var_complnet_inp,
-                          var_maskeds_inp],var_merged_out)
+                          var_masks_inp],var_merged_out)
 # and test model would be saved!
 # retrain model with ./data128.h5 <- small dataset.
 '''
@@ -117,20 +117,20 @@ with h5py.File('./data128_half.h5','r') as data_file:
         #--------------------------------------------------------------------------------------
         for batch in gen_batch(data_arr, BATCH_SIZE, IMG_SIZE, LD_CROP_SIZE,
                                MIN_LEN, MAX_LEN, mean_pixel_value):
-            origins, complnet_inputs, masked_origins, maskeds, ld_crop_yxhws = batch
+            origins, complnet_inputs, masked_origins, masks, ld_crop_yxhws = batch
 
             #batch_timer = ElapsedTimer('1 batch training time')
             #--------------------------------------------------------------------------------------
             if epoch < tc:
-                mse_loss = compl_model.train_on_batch([masked_origins, complnet_inputs, maskeds],
+                mse_loss = compl_model.train_on_batch([masked_origins, complnet_inputs, masks],
                                                       origins)
             else:
-                completed = compl_model.predict([masked_origins, complnet_inputs, maskeds])
+                completed = compl_model.predict([masked_origins, complnet_inputs, masks])
                 d_loss_real = discrim_model.train_on_batch([origins,ld_crop_yxhws],valids)
                 d_loss_fake = discrim_model.train_on_batch([completed,ld_crop_yxhws],fakes)
                 bce_d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
                 if epoch >= tc + td:
-                    joint_loss,mse,gan = joint_model.train_on_batch([masked_origins,complnet_inputs,maskeds,
+                    joint_loss,mse,gan = joint_model.train_on_batch([masked_origins,complnet_inputs,masks,
                                                                      ld_crop_yxhws],
                                                                     [origins, valids])
             #--------------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ with h5py.File('./data128_half.h5','r') as data_file:
                     result_dir = 'output'
                     completed = compl_model.predict([masked_origins, 
                                                      complnet_inputs, 
-                                                     maskeds])
+                                                     masks])
                     np.save(os.path.join(result_dir,'I_O_GT__%d.npy' % epoch),
                             np.array([complnet_inputs,completed,origins]))
                             # save predicted image of last batch in epoch.
