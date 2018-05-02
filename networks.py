@@ -123,10 +123,10 @@ if __name__ == "__main__":
     from keras.utils import plot_model
     complnet = completion_net()
     complnet.summary()
-    plot_model(complnet, to_file='complnet.png', show_shapes=True)
+    plot_model(complnet, to_file='tmp_complnet.png', show_shapes=True)
     discrimnet = discrimination_net()
     discrimnet.summary()
-    plot_model(discrimnet, to_file='discrimnet.png', show_shapes=True)
+    plot_model(discrimnet, to_file='tmp_discrimnet.png', show_shapes=True)
 
     print(get_model_memory_usage(6,complnet),'GB')
     print(get_model_memory_usage(6,discrimnet),'GB')
