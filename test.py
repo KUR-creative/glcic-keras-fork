@@ -41,10 +41,7 @@ def padding_removed(padded_img,no_pad_shape):
     # TODO: 0~pH-dH is incorrect!
     return padded_img[0:pH-dH,0:pW-dW]
 
-#origin, hw = load_image('./data/test_images/test1.png')
-#origin, hw = load_image('./data/test_images/test2.png')
-#origin, hw = load_image('./data/test_images/test3.png')
-origin, hw = load_image('./data/test_images/images 2.jpg')
+origin, hw = load_image('./data/test_images/012.jpg')
 mean_mask, not_mask = mask_from_user(hw, origin)
 holed_origin = origin * not_mask
 complnet_input = np.copy(holed_origin) + mean_mask
