@@ -48,10 +48,14 @@ mean_mask, not_mask = mask_from_user(hw, origin)
 holed_origin = origin * not_mask
 complnet_input = np.copy(holed_origin) + mean_mask
 
-compl_model = load_compl_model('./output/old/complnet_199.h5')
 h,w = hw
+complnet_input = complnet_input[:,:,0]
+complnet_input = complnet_input.reshape((1,h,w,1))
+
+compl_model = load_compl_model('./output/complnet_1099.h5',
+                               (None,None,1))
 complnet_output = compl_model.predict(
-                    [complnet_input.reshape((1,h,w,3))]
+                    [complnet_input.reshape((1,h,w,1))]
                   )
 complnet_output = complnet_output.reshape(
                     complnet_output.shape[1:]
