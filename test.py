@@ -30,6 +30,8 @@ def mask_from_user(mask_hw, origin):
     bgr_origin = cv2.cvtColor(origin,cv2.COLOR_RGB2BGR)
     mask = tester_ui(bgr_origin)
     mean_mask = mask * np.mean(origin) # images 2
+    #cv2.imshow('mask',mask); cv2.waitKey(0)
+    #cv2.imshow('mean mask',mean_mask); cv2.waitKey(0)
     return mean_mask, np.logical_not(mean_mask).astype(np.float32)
 
 def padding_removed(padded_img,no_pad_shape):
@@ -52,8 +54,8 @@ h,w = hw
 complnet_input = complnet_input[:,:,0]
 complnet_input = complnet_input.reshape((1,h,w,1))
 
-compl_model = load_compl_model('./output/complnet_1099.h5',
-                               (None,None,1))
+#compl_model = load_compl_model('./output/complnet_1099.h5', (None,None,1))
+compl_model = load_compl_model('./output/old/192x_200e_complnet_199.h5', (None,None,1))
 complnet_output = compl_model.predict(
                     [complnet_input.reshape((1,h,w,1))]
                   )
@@ -65,9 +67,10 @@ complnet_output = padding_removed(complnet_output, origin.shape)
 mask = np.logical_not(not_mask).astype(np.float32)
 completed = complnet_output * mask + holed_origin
 
+print(complnet_output.shape)
 
-#bgr_origin = cv2.cvtColor(origin,cv2.COLOR_RGB2BGR)
-#cv2.imshow('origin',bgr_origin); cv2.waitKey(0)
+bgr_origin = cv2.cvtColor(origin,cv2.COLOR_RGB2BGR)
+cv2.imshow('origin',bgr_origin); cv2.waitKey(0)
 #cv2.imshow('mean_mask',mean_mask); cv2.waitKey(0)
 #cv2.imshow('not_mask',not_mask); cv2.waitKey(0)
 #cv2.imshow('mask',mask); cv2.waitKey(0)

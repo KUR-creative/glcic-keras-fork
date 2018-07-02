@@ -4,6 +4,7 @@ log*
 test/
 train/
 *.jpg
+*.jpeg
 *.png
 *.swp
 *.swo
